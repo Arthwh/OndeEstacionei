@@ -2,12 +2,15 @@ package com.arthwh.ondeestacionei
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.LocationListener
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.arthwh.ondeestacionei.database.LocationDAO
@@ -25,16 +28,6 @@ class RegisterActivity : AppCompatActivity() {
     private var selectedImageUri: Uri? = null
     // Variável para guardar a URI temporária da câmera
     private var cameraImageUri: Uri? = null
-
-    //Para escolher da galeria
-//    private val pickImageLauncher = registerForActivityResult(
-//        ActivityResultContracts.GetContent()
-//    ) { uri: Uri? ->
-//        uri?.let {
-//            selectedImageUri = it
-//            binding.imgViewLocation.setImageURI(it) // Pré-visualização
-//        }
-//    }
 
     //Para usar a câmera
     private val takePictureLauncher = registerForActivityResult(
@@ -86,8 +79,6 @@ class RegisterActivity : AppCompatActivity() {
             cameraImageUri = uri
             //Abre a câmera passando o arquivo vazio para ela preencher
             takePictureLauncher.launch(uri)
-
-//            pickImageLauncher.launch("image/*")
         }
 
         btnSaveLocation.setOnClickListener {
@@ -138,7 +129,46 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun getActualLocation(){
-        checkLocationPermissions()
+        if (ActivityCompat.checkSelfPermission(
+                this@RegisterActivity,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this@RegisterActivity,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this@RegisterActivity,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                1
+            )
+            ActivityCompat.requestPermissions(
+                this@RegisterActivity,
+                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION),
+                1
+            )
+            ActivityCompat.requestPermissions(
+                this@RegisterActivity,
+                arrayOf(Manifest.permission.ACCESS_NETWORK_STATE),
+                1
+            )
+            return
+        }
+//        checkLocationPermissions()
+
+        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+
+        val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            ?: locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+
+        if (location != null) {
+            latitude = location.latitude
+            longitude = location.longitude
+            println("Current Location: $latitude, $longitude")
+            setActualLocationOnXml()
+        } else {
+            Toast.makeText(this, "GPS DESABILITADO.", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun setActualLocationOnXml(){
@@ -154,62 +184,62 @@ class RegisterActivity : AppCompatActivity() {
         return true
     }
 
-    private fun getLastKnownLocation() {
-        // Note: Always check for permissions before calling this
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: AndroidLocation? ->
-                if (location != null) {
-                    latitude = location.latitude
-                    longitude = location.longitude
-                    println("Current Location: $latitude, $longitude")
-                    setActualLocationOnXml()
-                } else {
-                    // Location can be null if location services are off or cache is cleared
-                    println("Location not found")
-                }
-            }
-            .addOnFailureListener { e ->
-                println("Error: ${e.message}")
-            }
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-
-        if (fineLocationGranted || coarseLocationGranted) {
-            // Permission granted, proceed to get location
-            getLastKnownLocation()
-        } else {
-            // Permission denied, show user a message explaining why you need it
-            println("Location permission denied by user.")
-        }
-    }
-
-    private fun checkLocationPermissions() {
-        val hasFineLocation = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        val hasCoarseLocation = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (hasFineLocation || hasCoarseLocation) {
-            // Permissions are already granted
-            getLastKnownLocation()
-        } else {
-            // Request both fine and coarse permissions
-            requestPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
-        }
-    }
+//    private fun getLastKnownLocation() {
+//        // Note: Always check for permissions before calling this
+//        fusedLocationClient.lastLocation
+//            .addOnSuccessListener { location: AndroidLocation? ->
+//                if (location != null) {
+//                    latitude = location.latitude
+//                    longitude = location.longitude
+//                    println("Current Location: $latitude, $longitude")
+//                    setActualLocationOnXml()
+//                } else {
+//                    // Location can be null if location services are off or cache is cleared
+//                    println("Location not found")
+//                }
+//            }
+//            .addOnFailureListener { e ->
+//                println("Error: ${e.message}")
+//            }
+//    }
+//
+//    private val requestPermissionLauncher = registerForActivityResult(
+//        ActivityResultContracts.RequestMultiplePermissions()
+//    ) { permissions ->
+//        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+//        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+//
+//        if (fineLocationGranted || coarseLocationGranted) {
+//            // Permission granted, proceed to get location
+//            getLastKnownLocation()
+//        } else {
+//            // Permission denied, show user a message explaining why you need it
+//            println("Location permission denied by user.")
+//        }
+//    }
+//
+//    private fun checkLocationPermissions() {
+//        val hasFineLocation = ContextCompat.checkSelfPermission(
+//            this, Manifest.permission.ACCESS_FINE_LOCATION
+//        ) == PackageManager.PERMISSION_GRANTED
+//
+//        val hasCoarseLocation = ContextCompat.checkSelfPermission(
+//            this, Manifest.permission.ACCESS_COARSE_LOCATION
+//        ) == PackageManager.PERMISSION_GRANTED
+//
+//        if (hasFineLocation || hasCoarseLocation) {
+//            // Permissions are already granted
+//            getLastKnownLocation()
+//        } else {
+//            // Request both fine and coarse permissions
+//            requestPermissionLauncher.launch(
+//                arrayOf(
+//                    Manifest.permission.ACCESS_FINE_LOCATION,
+//                    Manifest.permission.ACCESS_COARSE_LOCATION
+//                )
+//            )
+//        }
+//    }
 
     // Função para criar um arquivo temporário vazio onde a câmera vai salvar a foto
     private fun createTempImageUri(): Uri {

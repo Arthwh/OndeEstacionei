@@ -116,9 +116,7 @@
                 android:id="@+id/inputDescription"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:hint="Descrição"
-                android:lineBreakStyle="normal"
-                android:lineBreakWordStyle="phrase"/>
+                android:hint="Descrição"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <ImageView
